@@ -1,0 +1,14 @@
+services:
+  node:
+    image: node:23-alpine
+    container_name: nodeapp
+    volumes:
+      - ${PWD}:/app/
+    ports:
+      - 8081:8081
+    entrypoint: ["tail", "-f", "/dev/null"]
+    networks:
+      - nodeapplication
+networks:
+  nodeapplication:
+    driver: bridge
