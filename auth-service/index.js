@@ -1,11 +1,11 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-const dotenv = require("dotenv");
+// const dotenv = require("dotenv");
 const User = require("./util/userModel");
 
-dotenv.config();
-const PORT = process.env.PORT;
+// dotenv.config();
+const PORT = process.env.PORT || 8081;
 
 const app = express();
 app.use(express.json());
