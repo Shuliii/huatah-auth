@@ -12,46 +12,72 @@ app.use(express.json());
 
 app.get("/test", (req, res) => {
   console.log("test successful");
+  res.json({ ok: true });
 });
 
 app.post("/register", async (req, res) => {
   const { username, password } = req.body;
-  try {
-    const userExists = await User.findUser(username);
-    if (userExists)
-      return res.status(400).json({ message: "Username already taken" });
 
-    const result = await User.createUser(username, password);
-    return res.status(201).json({
-      message: "User created successfully!",
-    });
+  if (!username || !password) {
+    return res.status(400).json({ message: "Username and password required" });
+  }
+
+  const cleanUsername = String(username).trim();
+
+  try {
+    const userExists = await User.findUser(cleanUsername);
+    if (userExists) {
+      return res.status(400).json({ message: "Username already taken" });
+    }
+
+    await User.createUser(cleanUsername, password);
+
+    return res.status(201).json({ message: "User created successfully!" });
   } catch (error) {
-    console.error(error);
+    console.error("Register error:", error);
     return res.status(500).json({ error: "An error occurred." });
   }
 });
 
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ message: "Username and password required" });
+  }
+
+  const cleanUsername = String(username).trim();
+
   try {
-    const user = await User.findUser(username);
-    if (!user) return res.status(400).json({ message: "Invalid credentials" });
+    const user = await User.findUser(cleanUsername);
+    if (!user) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
 
     const validPassword = await bcrypt.compare(password, user.Password);
-    if (!validPassword)
+    if (!validPassword) {
       return res.status(400).json({ message: "Invalid credentials" });
+    }
 
-    if (user.isActive !== "1")
+    if (user.isActive !== 1) {
       return res
-        .status(400)
+        .status(403)
         .json({ message: "Please ask admins to activate the account!" });
+    }
 
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-      expiresIn: "4d",
+    const token = jwt.sign(
+      { id: user.id, isAdmin: user.isAdmin },
+      process.env.JWT_SECRET,
+      { expiresIn: "4d" },
+    );
+
+    return res.status(200).json({
+      token,
+      isActive: user.isActive,
+      isAdmin: user.isAdmin,
     });
-    res.status(200).json({ token, isActive: user.isActive });
   } catch (error) {
-    console.log(error);
+    console.error("Login error:", error);
     return res.status(500).json({ error: "An error occurred during login." });
   }
 });
